@@ -1,0 +1,19 @@
+[project]
+name = "anomaly-times"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "prefect",
+    "prefect-ray",
+    "nixtla",
+    "statsforecast",
+    "neuralforecast",
+    "mlforecast",
+    "pandas",
+    "numpy",
+    "prometheus-api-client",
+    "chronos-forecasting",
+    "lightgbm",
+]

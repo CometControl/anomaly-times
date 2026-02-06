@@ -1,0 +1,35 @@
+# generic values for prefect-server chart
+# helm repo add prefect https://prefecthq.github.io/prefect-helm
+# helm install prefect-server prefect/prefect-server -f helm/prefect-server-values.yaml
+
+# High Availability: Run multiple replicas
+replicas: 2
+
+# Connect to external Postgres (Recommended for Production)
+postgresql:
+  enabled: false
+  # If you want the chart to spin up postgres: enabled: true
+  
+# External DB Config (if postgresql.enabled: false)
+# secret:
+#   name: "prefect-postgres-secret"
+#   key: "connection-string"
+
+# Service configuration (Load Balancer is done by Ingress usually, but Nginx in docker-compose)
+server:
+  image:
+    repository: prefecthq/prefect
+    tag: 3.0.0-python3.12 # Match project python version
+  
+  # API Configuration
+  publicUrl: "http://localhost:4200/api" # Change this to your LoadBalancer/Ingress URL
+  
+# Ingress (Optional)
+ingress:
+  enabled: false
+  # className: nginx
+  # hosts:
+  #   - host: prefect.my-company.com
+  #     paths:
+  #       - path: /
+  #         pathType: ImplementationSpecific

@@ -1,0 +1,29 @@
+# generic values for prefect-worker chart
+# helm install prefect-worker prefect/prefect-worker -f helm/prefect-worker-values.yaml
+
+worker:
+  cloudApiConfig:
+    accountId: "" # Leave empty for self-hosted
+    workspaceId: "" # Leave empty for self-hosted
+  
+  config:
+    # Connect to the in-cluster Prefect Server Service
+    # Usually: http://<release-name>-prefect-server.<namespace>.svc.cluster.local:4200/api
+    apiUrl: "http://prefect-server.default.svc.cluster.local:4200/api"
+    
+    # The Work Pool this worker will poll
+    workPool: "k8s-pool"
+    
+    # Optional: Basic Auth if server is protected
+    # apiKey: "..." 
+    
+  image:
+    repository: prefecthq/prefect
+    tag: 3.0.0-python3.12
+    
+role:
+  # Worker needs permissions to create Jobs in the namespace
+  extraRules:
+    - apiGroups: ["batch", ""]
+      resources: ["jobs", "pods"]
+      verbs: ["*"]

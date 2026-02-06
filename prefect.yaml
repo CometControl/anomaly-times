@@ -1,0 +1,64 @@
+# generic metadata about this project
+name: anomaly-times
+prefect-version: 3.0.0
+
+# build section allows you to manage and build docker images
+build: 
+- prefect_docker.deployments.steps.build_docker_image:
+    id: build-image
+    requires: prefect-docker>=2.3.1
+    image_name: "{{ $IMAGE_NAME }}"
+    tag: latest
+    dockerfile: Dockerfile
+    push: false
+
+# push section allows you to manage if and how this project is uploaded to remote locations
+push: null
+
+# pull section allows you to provide instructions for cloning this project in new locations
+pull:
+- prefect.deployments.steps.git_clone:
+    repository: "{{ $GIT_REPO_URL }}"
+    branch: "{{ $GIT_BRANCH }}"
+    access_token: "{{ $GIT_TOKEN }}" 
+
+# the deployments section allows you to provide configuration for deploying flows
+deployments:
+- name: forecasting-deployment
+  version: null
+  tags: []
+  description: "Scheduled forecasting flow"
+  entrypoint: anomaly_times/flows/forecasting.py:forecast_flow
+  parameters: {}
+  work_pool:
+    name: "{{ $WORK_POOL_NAME }}"
+    work_queue_name: default
+    job_variables: 
+      image: "{{ build-image.image }}"
+  schedule: null
+
+- name: detection-deployment
+  version: null
+  tags: []
+  description: "Real-time anomaly detection flow"
+  entrypoint: anomaly_times/flows/detection.py:detect_anomalies_flow
+  parameters: {}
+  work_pool:
+    name: "{{ $WORK_POOL_NAME }}"
+    work_queue_name: default
+    job_variables: 
+      image: "{{ build-image.image }}"
+  schedule: null
+
+- name: training-deployment
+  version: null
+  tags: []
+  description: "Periodic model training/fine-tuning"
+  entrypoint: anomaly_times/flows/training.py:train_model_flow
+  parameters: {}
+  work_pool:
+    name: "{{ $WORK_POOL_NAME }}"
+    work_queue_name: default
+    job_variables:
+      image: "{{ build-image.image }}"
+  schedule: null
