@@ -23,6 +23,17 @@ class LgbmModel(BaseModel):
             freq=self.freq,
             lags=self.lags,
         )
+        
+    def save(self, path: str) -> None:
+        print(f"Saving LgbmModel to {path}")
+        self.mlf.save(path)
+
+    @classmethod
+    def load(cls, path: str) -> 'LgbmModel':
+        print(f"Loading LgbmModel from {path}")
+        instance = cls()
+        instance.mlf = MLForecast.load(path)
+        return instance
 
     def fit(self, df: pd.DataFrame) -> None:
         data = df.copy()

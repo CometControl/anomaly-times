@@ -30,6 +30,18 @@ class TimesNetModel(BaseModel):
             models=models,
             freq=self.freq
         )
+        
+    def save(self, path: str) -> None:
+        print(f"Saving TimesNetModel to {path}")
+        # NeuralForecast saving creates a directory at path
+        self.nf.save(path=path, overwrite=True)
+
+    @classmethod
+    def load(cls, path: str) -> 'TimesNetModel':
+        print(f"Loading TimesNetModel from {path}")
+        instance = cls()
+        instance.nf = NeuralForecast.load(path=path)
+        return instance
 
     def fit(self, df: pd.DataFrame) -> None:
         data = df.copy()

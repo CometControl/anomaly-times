@@ -25,6 +25,20 @@ class ArimaModel(BaseModel):
             freq=self.freq,
             n_jobs=self.n_jobs
         )
+        
+    def save(self, path: str) -> None:
+        # StatsForecast has a save method, but it saves the whole object
+        print(f"Saving ArimaModel to {path}")
+        self.sf.save(path=path)
+
+    @classmethod
+    def load(cls, path: str) -> 'ArimaModel':
+        print(f"Loading ArimaModel from {path}")
+        # Create empty instance
+        instance = cls()
+        # Load internal StatsForecast object
+        instance.sf = StatsForecast.load(path=path)
+        return instance
 
     def fit(self, df: pd.DataFrame) -> None:
         data = df.copy()

@@ -16,4 +16,5 @@ dependencies = [
     "prometheus-api-client",
     "chronos-forecasting",
     "lightgbm",
+    "s3fs",
 ]

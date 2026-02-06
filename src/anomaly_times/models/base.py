@@ -32,10 +32,24 @@ class BaseModel(ABC):
             confidence_level: Optional confidence level (e.g., 0.9 for 90% interval).
             
         Returns:
-            pd.DataFrame: DataFrame containing:
-                - 'timestamp': Future timestamps
-                - 'pred': Point forecast
                 - 'lower': Lower bound (if confidence_level set)
                 - 'upper': Upper bound (if confidence_level set)
+        """
+        pass
+
+
+    @abstractmethod
+    def save(self, path: str) -> None:
+        """
+        Saves the fitted model to the specified path.
+        Path can be local or remote (s3://).
+        """
+        pass
+
+    @classmethod
+    @abstractmethod
+    def load(cls, path: str) -> 'BaseModel':
+        """
+        Loads the model from the specified path.
         """
         pass

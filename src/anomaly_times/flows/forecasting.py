@@ -7,17 +7,22 @@ from ..models.tsfm import ChronosModel
 # from ..models.nixtla import NixtlaModel
 from prefect_ray.task_runners import RayTaskRunner
 
+import fsspec
+from datetime import timezone
+
 @task
 def load_and_predict(
     context_df: pd.DataFrame,
     model_type: str = "arima",
     horizon: int = 60,
     confidence_level: float = 0.9,
-    multivariate: bool = False
+    multivariate: bool = False,
+    storage_path: str = None, # e.g. s3://bucket/model.pkl
+    fit_expiration_hours: int = 24
 ) -> pd.DataFrame:
     """
     Task to load model and predict.
-    Dynamically imports model class based on model_type.
+    Implements Check-Load-Or-Fit-Save logic.
     """
     logger = get_run_logger()
     logger.info(f"Predicting with {model_type} (Multivariate: {multivariate})")
@@ -25,26 +30,76 @@ def load_and_predict(
     params = {
         "freq": "1min", 
         "multivariate": multivariate,
-        "horizon": horizon # For models needing H at init (NHITS)
+        "horizon": horizon 
     }
 
-    # Dynamic Model Loader
+    # Model Class Selector
     if model_type == "chronos":
         from ..models.tsfm.chronos import ChronosModel
-        model = ChronosModel(params=params)
+        ModelClass = ChronosModel
     elif model_type == "arima":
         from ..models.nixtla.arima import ArimaModel
-        model = ArimaModel(params=params)
+        ModelClass = ArimaModel
     elif model_type == "timesnet":
         from ..models.nixtla.timesnet import TimesNetModel
-        model = TimesNetModel(params=params)
+        ModelClass = TimesNetModel
     elif model_type == "lgbm":
         from ..models.nixtla.lgbm import LgbmModel
-        model = LgbmModel(params=params)
+        ModelClass = LgbmModel
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
-    model.fit(context_df)
+    model = None
+    should_fit = True
+    
+    # 1. Check Storage
+    if storage_path:
+        try:
+            fs, fs_path = fsspec.core.url_to_fs(storage_path)
+            if fs.exists(fs_path):
+                # Check Expiration
+                info = fs.info(fs_path)
+                mtime = info['mtime'] # usually timestamp or datetime
+                # Ensure UTC
+                if isinstance(mtime, float) or isinstance(mtime, int):
+                    last_modified = datetime.fromtimestamp(mtime, tz=timezone.utc)
+                else:
+                    last_modified = mtime.replace(tzinfo=timezone.utc)
+                
+                age_hours = (datetime.now(timezone.utc) - last_modified).total_seconds() / 3600
+                
+                if age_hours < fit_expiration_hours:
+                    logger.info(f"Found valid model at {storage_path} (Age: {age_hours:.1f}h). Loading...")
+                    model = ModelClass.load(storage_path)
+                    # For some models (Chronos), we still need context
+                    if hasattr(model, 'context_df'): # If model stores context, update it?
+                        # Actually 'fit' updates context. If loaded, we might need to supply context for modify predict?
+                        # Standard interface: predict takes df. 
+                        pass 
+                    should_fit = False
+                else:
+                    logger.info(f"Model at {storage_path} expired (Age: {age_hours:.1f}h). Re-fitting...")
+            else:
+                logger.info(f"No existing model at {storage_path}. Fitting new...")
+        except Exception as e:
+            logger.warning(f"Error checking storage: {e}. Proceeding to fit.")
+            
+    # 2. Fit (if needed)
+    if should_fit:
+        logger.info("Fitting model...")
+        model = ModelClass(params=params) # Create new
+        model.fit(context_df)
+        
+        # Save if path provided
+        if storage_path:
+            logger.info(f"Saving model to {storage_path}...")
+            try:
+                model.save(storage_path)
+            except Exception as e:
+                logger.error(f"Failed to save model: {e}")
+
+    # 3. Predict
+    # Even if loaded, some models (Chronos) use the 'df' passed to predict as context
     forecast = model.predict(context_df, horizon=horizon, confidence_level=confidence_level)
     return forecast
 
@@ -57,12 +112,13 @@ def forecast_flow(
     lookback_minutes: int = 60,
     forecast_horizon_minutes: int = 60,
     tsdb_url: str = "http://victoria-metrics:8428",
-    model_type: str = "chronos",
-    is_multivariate: bool = False
+    model_type: str = "lgbm",
+    is_multivariate: bool = False,
+    artifact_storage_path: str = None, # e.g. s3://bucket/models/{promql_hash}
+    fit_expiration_hours: int = 24
 ):
     """
-    Orchestrates forecasting for a PromQL query.
-    Handles multiple series returned by the query.
+    Orchestrates forecasting with stateful model management.
     """
     logger = get_run_logger()
     
@@ -89,7 +145,9 @@ def forecast_flow(
         model_type=model_type,
         horizon=forecast_horizon_minutes,
         confidence_level=0.9,
-        multivariate=is_multivariate
+        multivariate=is_multivariate,
+        storage_path=artifact_storage_path,
+        fit_expiration_hours=fit_expiration_hours
     )
     
     # 3. Write Forecast
