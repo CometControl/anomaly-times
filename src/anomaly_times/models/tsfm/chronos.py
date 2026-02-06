@@ -3,6 +3,8 @@ import pandas as pd
 import torch
 from typing import Dict, Any, Optional
 from chronos import ChronosPipeline
+from prefect import flow
+from ..utils import run_stateful_model
 
 class ChronosModel(BaseModel):
     """
@@ -92,3 +94,29 @@ class ChronosModel(BaseModel):
             results.append(series_res)
             
         return pd.concat(results)
+
+@flow(name="chronos_subflow")
+def chronos_flow(
+    context_df: pd.DataFrame,
+    horizon: int = 60,
+    confidence_level: float = 0.9,
+    storage_path: str = None,
+    fit_expiration_hours: int = 24,
+    model_name: str = "amazon/chronos-t5-tiny",
+    **kwargs
+) -> pd.DataFrame:
+    
+    params = {
+        "model_name": model_name,
+        "device_map": "cpu"
+    }
+    
+    return run_stateful_model(
+        model_class=ChronosModel,
+        context_df=context_df,
+        params=params,
+        horizon=horizon,
+        confidence_level=confidence_level,
+        storage_path=storage_path,
+        fit_expiration_hours=fit_expiration_hours
+    )

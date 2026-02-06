@@ -1,8 +1,9 @@
 from ..base import BaseModel
 import pandas as pd
-from typing import Dict, Any, Optional
 from neuralforecast import NeuralForecast
 from neuralforecast.models import TimesNet
+from prefect import flow
+from ..utils import run_stateful_model
 
 class TimesNetModel(BaseModel):
     """
@@ -64,3 +65,30 @@ class TimesNetModel(BaseModel):
         result['upper'] = result['pred']
             
         return result[['timestamp', 'unique_id', 'pred', 'lower', 'upper']]
+
+@flow(name="timesnet_subflow")
+def timesnet_flow(
+    context_df: pd.DataFrame,
+    horizon: int = 60,
+    confidence_level: float = 0.9,
+    storage_path: str = None,
+    fit_expiration_hours: int = 24,
+    multivariate: bool = False,
+    **kwargs
+) -> pd.DataFrame:
+    
+    params = {
+        "freq": "1min",
+        "horizon": horizon,
+        "multivariate": multivariate
+    }
+    
+    return run_stateful_model(
+        model_class=TimesNetModel,
+        context_df=context_df,
+        params=params,
+        horizon=horizon,
+        confidence_level=confidence_level,
+        storage_path=storage_path,
+        fit_expiration_hours=fit_expiration_hours
+    )
