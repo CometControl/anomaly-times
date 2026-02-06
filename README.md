@@ -1,6 +1,4 @@
-<span style="font-family: 'Old English Text MT', 'Engravers Old English', serif; font-size: 2em;">
-  Anomaly Times
-</span>
+# 𝕬𝖓𝖔𝖒𝖆𝖑𝖞 𝕿𝖎𝖒𝖊𝖘
 
 **Scalable, Real-Time Time Series Forecasting & Anomaly Detection Platform**
 
