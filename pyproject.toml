@@ -11,6 +11,8 @@ dependencies = [
     "numpy",
     "prometheus-api-client",
     "s3fs",
+    "huggingface_hub",
+    "pyarrow",
 ]
 
 [project.optional-dependencies]

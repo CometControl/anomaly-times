@@ -3,7 +3,6 @@ import pandas as pd
 from typing import Dict, Any, Optional
 from prefect import flow
 from ..utils import run_stateful_model
-from ..utils import run_stateful_model
 
 class ChronosModel(BaseModel):
     """
