@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy dependency definition
 COPY pyproject.toml .
-COPY uv.lock .
+
 
 # Install dependencies
 # We use --system to install into the system python, avoiding venv complexity in Docker

@@ -1,9 +1,8 @@
 from ..base import BaseModel
 import pandas as pd
-import torch
 from typing import Dict, Any, Optional
-from chronos import ChronosPipeline
 from prefect import flow
+from ..utils import run_stateful_model
 from ..utils import run_stateful_model
 
 class ChronosModel(BaseModel):
@@ -17,6 +16,9 @@ class ChronosModel(BaseModel):
         self.model_name = params.get('model_name', "amazon/chronos-t5-tiny")
         self.device_map = params.get('device_map', "cpu") 
         
+        import torch
+        from chronos import ChronosPipeline
+
         self.pipeline = ChronosPipeline.from_pretrained(
             self.model_name,
             device_map=self.device_map,
@@ -49,6 +51,7 @@ class ChronosModel(BaseModel):
         for uid in unique_ids:
             uid_df = context[context['unique_id'] == uid].sort_values('timestamp')
             # Extract values as tensor
+            import torch
             val_col = 'value' if 'value' in uid_df.columns else uid_df.columns[2]
             batch_context.append(torch.tensor(uid_df[val_col].values))
 
@@ -67,6 +70,7 @@ class ChronosModel(BaseModel):
         for idx, uid in enumerate(unique_ids):
             forecast_torch = forecast[idx] 
             
+            import torch
             median_pred = torch.quantile(forecast_torch, 0.5, dim=0).numpy()
             lower_bound = median_pred
             upper_bound = median_pred

@@ -1,7 +1,6 @@
 from ..base import BaseModel
 import pandas as pd
-from neuralforecast import NeuralForecast
-from neuralforecast.models import TimesNet
+from typing import Dict, Any, Optional
 from prefect import flow
 from ..utils import run_stateful_model
 
@@ -15,6 +14,9 @@ class TimesNetModel(BaseModel):
     
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         super().__init__(params)
+        from neuralforecast import NeuralForecast
+        from neuralforecast.models import TimesNet
+
         self.freq = params.get('freq', '1min')
         self.input_size = params.get('input_size', 60)
         self.h = params.get('horizon', 60)
@@ -40,6 +42,7 @@ class TimesNetModel(BaseModel):
     @classmethod
     def load(cls, path: str) -> 'TimesNetModel':
         print(f"Loading TimesNetModel from {path}")
+        from neuralforecast import NeuralForecast
         instance = cls()
         instance.nf = NeuralForecast.load(path=path)
         return instance

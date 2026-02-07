@@ -1,7 +1,6 @@
 from ..base import BaseModel
 import pandas as pd
-from statsforecast import StatsForecast
-from statsforecast.models import AutoARIMA
+from typing import Dict, Any, Optional
 from prefect import flow
 from ..utils import run_stateful_model
 
@@ -16,6 +15,9 @@ class ArimaModel(BaseModel):
     
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         super().__init__(params)
+        from statsforecast import StatsForecast
+        from statsforecast.models import AutoARIMA
+        
         self.freq = params.get('freq', '1min')
         self.season_length = params.get('season_length', 60)
         self.n_jobs = params.get('n_jobs', -1)

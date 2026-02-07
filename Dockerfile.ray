@@ -1,0 +1,33 @@
+FROM rayproject/ray:latest-py312-cpu
+
+USER root
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+# Ray image is Ubuntu-based
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency definition
+COPY pyproject.toml .
+# Install dependencies including ML extras
+# We use --system to install into the system python
+RUN uv pip install --system -r pyproject.toml --extra ml --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Copy source code
+COPY src/ src/
+
+# Set python path so workers can import our code
+ENV PYTHONPATH=/app/src
+
+# Switch back to ray user
+USER ray
+
+# Default command (will be overridden)
+CMD ["ray", "start", "--head", "--dashboard-host=0.0.0.0", "--block"]

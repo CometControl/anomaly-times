@@ -81,11 +81,30 @@ services:
     environment:
       - PREFECT_API_URL=http://nginx:4200/api
       - VM_URL=http://victoria-metrics:8428
+      - RAY_ADDRESS=ray://ray-head:10001
     volumes:
       - ./src:/app/src
     depends_on:
       - nginx
       - victoria-metrics
+      - ray-head
+
+  # Ray Head Node
+  ray-head:
+    build:
+      context: .
+      dockerfile: Dockerfile.ray
+    image: anomaly-times-ray:latest
+    command: ray start --head --dashboard-host=0.0.0.0 --block
+    ports:
+      - "8265:8265"  # Dashboard
+      - "6379:6379"  # Redis
+      - "10001:10001" # Ray client
+    volumes:
+      - ./src:/app/src
+    shm_size: 2g
+
+
 
 volumes:
   vmdata:
