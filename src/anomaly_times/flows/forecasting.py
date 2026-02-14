@@ -1,5 +1,6 @@
 from prefect import flow, task, get_run_logger
 from datetime import datetime, timedelta
+from typing import Optional
 import pandas as pd
 from ..core.reader import read_metric
 from ..core.writer import write_metric
@@ -18,7 +19,6 @@ from datetime import timezone
 
 @flow(
     name="forecast_flow",
-    task_runner=RayTaskRunner()
 )
 def forecast_flow(
     promql: str = "http_requests_total",
@@ -27,7 +27,7 @@ def forecast_flow(
     tsdb_url: str = "http://victoria-metrics:8428",
     model_type: str = "lgbm",
     is_multivariate: bool = False,
-    artifact_storage_path: str = None, # e.g. s3://bucket/models/{promql_hash}
+    artifact_storage_path: Optional[str] = None, # e.g. s3://bucket/models/{promql_hash}
     fit_expiration_hours: int = 24
 ):
     """
@@ -35,7 +35,9 @@ def forecast_flow(
     """
     logger = get_run_logger()
     
-    end_time = datetime.now()
+    # Align to minute boundary for deterministic query steps
+    end_time = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+
     start_time = end_time - timedelta(minutes=lookback_minutes)
     
     # 1. Fetch Context (Results in Panel Data: timestamp, unique_id, value)

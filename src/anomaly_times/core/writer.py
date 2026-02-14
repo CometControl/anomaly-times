@@ -39,7 +39,7 @@ def write_metric(
     else:
         # fallback
         for col in df.columns:
-            if col not in ['timestamp', 'unique_id', 'lower', 'upper']:
+            if col not in ['timestamp', 'unique_id']:
                 value_col = col
                 break
     

@@ -123,7 +123,8 @@ def process_single_series(values, start_time, step_seconds, freq_str, metric_bas
     
     # Calculate time range
     # Center around NOW
-    now = datetime.now(timezone.utc)
+    # Center around NOW, but align to nearest minute for clean timestamps
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     duration = timedelta(seconds=step_seconds * num_points)
     shifted_start = now - (duration / 2)
     

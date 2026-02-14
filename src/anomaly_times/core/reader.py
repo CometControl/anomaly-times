@@ -50,7 +50,7 @@ def read_metric(
 
     # 2. Generate unique_id
     # Filter out timestamp and value to get label cols
-    label_cols = [c for c in df.columns if c not in ['timestamp', 'value']]
+    label_cols = [c for c in df.columns if c not in ['timestamp', 'value', '__name__']]
     
     if not label_cols:
         df['unique_id'] = 'series_0'

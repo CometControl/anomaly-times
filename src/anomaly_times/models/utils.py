@@ -17,7 +17,7 @@ def get_model_flow(model_type: str):
     for subpkg in search_paths:
         try:
             # Attempt import: src.anomaly_times.models.{subpkg}.{model_type}
-            module_path = f"..{subpkg}.{model_type}"
+            module_path = f".{subpkg}.{model_type}"
             # import_module needs absolute path or relative with package arg
             # We are in src.anomaly_times.models.utils, so package is src.anomaly_times.models
             module = importlib.import_module(module_path, package=__package__)

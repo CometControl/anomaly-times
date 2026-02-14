@@ -1,5 +1,6 @@
 from prefect import flow, get_run_logger
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 import pandas as pd
 from ..core.reader import read_metric
 from ..core.writer import write_metric
@@ -8,7 +9,7 @@ from ..core.anomaly import calculate_anomaly_score
 @flow(name="detect_anomalies_flow")
 def detect_anomalies_flow(
     metric_name: str = "http_requests_total", # Keeping param name for compatibility, but acts as promql_query
-    promql: str = None, # Explicit alias
+    promql: Optional[str] = None, # Explicit alias
     tsdb_url: str = "http://victoria-metrics:8428"
 ):
     """
@@ -19,7 +20,8 @@ def detect_anomalies_flow(
     logger = get_run_logger()
     query = promql or metric_name
     
-    now = datetime.now()
+    # Align to minute boundary for deterministic query steps
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
     lookback = timedelta(minutes=5)
     start = now - lookback
     
